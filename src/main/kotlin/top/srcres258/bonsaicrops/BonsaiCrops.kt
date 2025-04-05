@@ -6,6 +6,8 @@ import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import thedarkcolour.kotlinforforge.neoforge.forge.MOD_BUS
 import top.srcres258.bonsaicrops.block.ModBlocks
+import top.srcres258.bonsaicrops.item.ModCreativeModeTabs
+import top.srcres258.bonsaicrops.item.ModItems
 
 @Mod(BonsaiCrops.MOD_ID)
 object BonsaiCrops {
@@ -16,6 +18,8 @@ object BonsaiCrops {
     init {
         LOGGER.log(Level.INFO, "Loading $MOD_ID...")
 
+        ModCreativeModeTabs.register(MOD_BUS)
         ModBlocks.register(MOD_BUS)
+        ModItems.register(MOD_BUS)
     }
 }

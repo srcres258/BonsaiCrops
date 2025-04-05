@@ -9,7 +9,10 @@ import top.srcres258.bonsaicrops.block.ModBlocks
 class ModBlockLootTableProvider(
     registries: HolderLookup.Provider
 ) : BlockLootSubProvider(setOf(), FeatureFlags.REGISTRY.allFlags(), registries) {
-    override fun generate() {}
+    override fun generate() {
+        dropSelf(ModBlocks.BONSAI_POT.get())
+        dropSelf(ModBlocks.HOPPING_BONSAI_POT.get())
+    }
 
     override fun getKnownBlocks(): Iterable<Block> = Iterable {
         ModBlocks.BLOCKS.entries.map { it.value() }.iterator()
