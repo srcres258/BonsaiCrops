@@ -4,10 +4,13 @@ import com.mojang.serialization.MapCodec
 import net.minecraft.core.BlockPos
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
+import net.minecraft.world.Containers
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.ItemInteractionResult
+import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.BlockItem
+import net.minecraft.world.item.HoeItem
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.BlockGetter
 import net.minecraft.world.level.Level
@@ -20,6 +23,7 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker
 import net.minecraft.world.level.block.entity.BlockEntityType
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.BlockHitResult
+import net.minecraft.world.phys.Vec3
 import net.minecraft.world.phys.shapes.BooleanOp
 import net.minecraft.world.phys.shapes.CollisionContext
 import net.minecraft.world.phys.shapes.Shapes
@@ -96,26 +100,42 @@ class BonsaiPotBlock(
     ): ItemInteractionResult {
         val blockEntity = level.getBlockEntity(pos)
         if (blockEntity is BonsaiPotBlockEntity) {
-            val cropInventory = blockEntity.cropInventory
-            if (cropInventory.getStackInSlot(0).isEmpty && !stack.isEmpty) {
-                val item = stack.item
-                if (item is BlockItem && item.block is CropBlock) {
-                    // If the crop inventory is empty and the player is holding an crop item,
-                    // add the item to the crop inventory and decrease the player's stack size.
-                    cropInventory.setStackInSlot(0, stack.split(1))
-                    level.playSound(player, pos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 1F, 2F)
+            val item = stack.item
+            if (item is HoeItem) {
+                // If the player is holding a hoe, try to harvest the crop.
+                if (blockEntity.hasCraftingFinished) {
+                    val outputs = blockEntity.harvest(level, pos, stack, true)
+                    if (outputs.isNotEmpty()) {
+                        val center = Vec3.atCenterOf(pos)
+                        for (output in outputs) {
+                            Containers.dropItemStack(level, center.x, center.y, center.z, output)
+                        }
+                        stack.hurtAndBreak(1, player, LivingEntity.getSlotForHand(hand))
+                    }
                 }
-            } else if (stack.isEmpty) {
-                // If the player is not holding an item,
-                // remove the first item from the crop inventory and give it to the player.
-                val stackExtracted = cropInventory.extractItem(0, 1, false)
-                player.setItemInHand(hand, stackExtracted)
-                blockEntity.clearContents()
-                level.playSound(player, pos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 1F, 1F)
+            } else {
+                val cropInventory = blockEntity.cropInventory
+                if (cropInventory.getStackInSlot(0).isEmpty && !stack.isEmpty) {
+                    if (item is BlockItem && item.block is CropBlock) {
+                        // If the crop inventory is empty and the player is holding an crop item,
+                        // add the item to the crop inventory and decrease the player's stack size.
+                        cropInventory.setStackInSlot(0, stack.split(1))
+                        level.playSound(player, pos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 1F, 2F)
+                    }
+                } else if (stack.isEmpty) {
+                    // If the player is not holding an item,
+                    // remove the first item from the crop inventory and give it to the player.
+                    val stackExtracted = cropInventory.extractItem(0, 1, false)
+                    player.setItemInHand(hand, stackExtracted)
+                    blockEntity.clearContents()
+                    level.playSound(player, pos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 1F, 1F)
+                }
             }
+
+            return ItemInteractionResult.SUCCESS
         }
 
-        return ItemInteractionResult.SUCCESS
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION
     }
 
     override fun <T : BlockEntity?> getTicker(

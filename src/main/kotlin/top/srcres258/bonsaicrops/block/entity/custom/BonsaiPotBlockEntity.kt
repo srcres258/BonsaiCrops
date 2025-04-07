@@ -26,7 +26,7 @@ import top.srcres258.bonsaicrops.util.dropItemHandler
 import top.srcres258.bonsaicrops.util.generateDropsForBlock
 
 class BonsaiPotBlockEntity(
-    isHopping: Boolean,
+    private val isHopping: Boolean,
     pos: BlockPos,
     blockState: BlockState
 ) : BlockEntity(
@@ -98,6 +98,7 @@ class BonsaiPotBlockEntity(
             if (hasCraftingFinished) {
                 if (craftItem(level, blockPos)) {
                     resetProgress()
+                    sendBlockEntityProgressUpdatePayloadToAllPlayers(blockPos, progress, maxProgress)
                 }
             }
         } else {
@@ -117,29 +118,20 @@ class BonsaiPotBlockEntity(
             return item is BlockItem && item.block is CropBlock
         }
 
-    private val hasCraftingFinished: Boolean
+    val hasCraftingFinished: Boolean
         get() = progress >= maxProgress
 
     private fun craftItem(level: Level, blockPos: BlockPos): Boolean {
+        if (!isHopping) {
+            return false
+        }
+
         if (level is ServerLevel) {
             // Generates outputs according to the loot table, and update the progress of output items.
-            val cropItemStack = cropInventory.getStackInSlot(0)
-            val cropItem = cropItemStack.item
-            if (cropItem !is BlockItem) {
+            val outputs = harvest(level, blockPos)
+            if (outputs.isEmpty()) {
                 return false
             }
-            val cropBlock = cropItem.block
-            if (cropBlock !is CropBlock) {
-                return false
-            }
-            val outputs = generateDropsForBlock(
-                level,
-                cropBlock,
-                pos = blockPos,
-                blockState = cropBlock.getStateForAge(cropBlock.maxAge),
-                tool = ItemStack.EMPTY,
-                blockEntity = this
-            )
             for (output in outputs) {
                 val progressIncrement = output.count.toDouble() / 10.0
                 if (output.item in outputProgressPerDropItem.keys) {
@@ -214,6 +206,47 @@ class BonsaiPotBlockEntity(
     private fun resetProgress() {
         progress = 0
         maxProgress = 200
+    }
+
+    fun harvest(
+        level: Level? = this.level,
+        blockPos: BlockPos = this.blockPos,
+        tool: ItemStack = ItemStack.EMPTY,
+        resetProgress: Boolean = false
+    ): List<ItemStack> {
+        if (!hasCraftingFinished) {
+            return emptyList()
+        }
+        if (level == null) {
+            return emptyList()
+        }
+        if (level !is ServerLevel) {
+            return emptyList()
+        }
+
+        val cropItemStack = cropInventory.getStackInSlot(0)
+        val cropItem = cropItemStack.item
+        if (cropItem !is BlockItem) {
+            return emptyList()
+        }
+        val cropBlock = cropItem.block
+        if (cropBlock !is CropBlock) {
+            return emptyList()
+        }
+        val outputs = generateDropsForBlock(
+            level,
+            cropBlock,
+            pos = blockPos,
+            blockState = cropBlock.getStateForAge(cropBlock.maxAge),
+            tool = tool,
+            blockEntity = this
+        )
+
+        if (resetProgress) {
+            this.resetProgress()
+        }
+
+        return outputs
     }
 
     override fun getUpdatePacket(): Packet<ClientGamePacketListener> =
