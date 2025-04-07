@@ -159,6 +159,9 @@ class BonsaiPotBlockEntity(
             for (stack in resultStacks) {
                 var insertionSucceeded = false
                 for (i in 0 ..< blockCap.slots) {
+                    if (!blockCap.isItemValid(i, stack)) {
+                        continue
+                    }
                     val stackInside = blockCap.getStackInSlot(i)
                     if (!(stackInside.isEmpty || ItemStack.isSameItemSameComponents(stackInside, stack))) {
                         continue
