@@ -15,6 +15,7 @@ import net.minecraft.world.level.LightLayer
 import net.minecraft.world.level.block.CropBlock
 import thedarkcolour.kotlinforforge.neoforge.forge.use
 import top.srcres258.bonsaicrops.block.entity.custom.BonsaiPotBlockEntity
+import kotlin.math.round
 
 class BonsaiPotBlockEntityRenderer(
     private val context: BlockEntityRendererProvider.Context
@@ -44,9 +45,11 @@ class BonsaiPotBlockEntityRenderer(
                     poseStack.translate(0.0F, 0.15F / scalingFactor, 0.0F)
                     poseStack.translate(-0.5F, 0.0F, -0.5F)
 
-                    val maxAgeState = block.getStateForAge(block.maxAge)
+                    val percent = blockEntity.progress.toFloat() / blockEntity.maxProgress.toFloat()
+                    val age = round(percent * block.maxAge.toFloat()).toInt()
+                    val stateToRender = block.getStateForAge(age)
                     blockRenderer.renderBatched(
-                        maxAgeState,
+                        stateToRender,
                         blockEntity.blockPos,
                         level,
                         poseStack,

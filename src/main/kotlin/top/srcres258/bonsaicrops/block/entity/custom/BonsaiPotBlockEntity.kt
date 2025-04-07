@@ -9,10 +9,10 @@ import net.minecraft.network.protocol.Packet
 import net.minecraft.network.protocol.game.ClientGamePacketListener
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.Items
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.CropBlock
 import net.minecraft.world.level.block.entity.BlockEntity
@@ -23,6 +23,7 @@ import top.srcres258.bonsaicrops.block.entity.ModBlockEntityTypes
 import top.srcres258.bonsaicrops.network.custom.sendBlockEntityProgressUpdatePayloadToAllPlayers
 import top.srcres258.bonsaicrops.util.IProgressAccessor
 import top.srcres258.bonsaicrops.util.dropItemHandler
+import top.srcres258.bonsaicrops.util.generateDropsForBlock
 
 class BonsaiPotBlockEntity(
     isHopping: Boolean,
@@ -120,22 +121,83 @@ class BonsaiPotBlockEntity(
         get() = progress >= maxProgress
 
     private fun craftItem(level: Level, blockPos: BlockPos): Boolean {
-        val blockCap = level.getCapability(
-            Capabilities.ItemHandler.BLOCK,
-            blockPos.below(),
-            Direction.UP
-        ) ?: return false
-        val resultStacks = listOf(ItemStack(Items.STICK, 2))
-        for (stack in resultStacks) {
-            val stack1 = blockCap.insertItem(0, stack, true)
-            if (stack.count == stack1.count) {
+        if (level is ServerLevel) {
+            // Generates outputs according to the loot table, and update the progress of output items.
+            val cropItemStack = cropInventory.getStackInSlot(0)
+            val cropItem = cropItemStack.item
+            if (cropItem !is BlockItem) {
                 return false
-            } else {
-                blockCap.insertItem(0, stack, false)
             }
+            val cropBlock = cropItem.block
+            if (cropBlock !is CropBlock) {
+                return false
+            }
+            val outputs = generateDropsForBlock(
+                level,
+                cropBlock,
+                pos = blockPos,
+                blockState = cropBlock.getStateForAge(cropBlock.maxAge),
+                tool = ItemStack.EMPTY,
+                blockEntity = this
+            )
+            for (output in outputs) {
+                val progressIncrement = output.count.toDouble() / 10.0
+                if (output.item in outputProgressPerDropItem.keys) {
+                    outputProgressPerDropItem[output.item] = outputProgressPerDropItem[output.item]!! + progressIncrement
+                } else {
+                    outputProgressPerDropItem[output.item] = progressIncrement
+                }
+            }
+
+            // Finds available output items and try to output them into the block below.
+            val itemsAvailable = outputItemsAvailable
+            if (itemsAvailable.isEmpty()) {
+                return false
+            }
+            val resultStacks = mutableListOf<ItemStack>()
+            for (item in itemsAvailable) {
+                outputs.firstOrNull { output -> output.item == item }
+                    ?.let { outputStack -> resultStacks.add(outputStack.copy()) }
+            }
+            val blockCap = level.getCapability(
+                Capabilities.ItemHandler.BLOCK,
+                blockPos.below(),
+                Direction.UP
+            ) ?: return false
+            for (stack in resultStacks) {
+                var insertionSucceeded = false
+                for (i in 0 ..< blockCap.slots) {
+                    val stackInside = blockCap.getStackInSlot(i)
+                    if (!(stackInside.isEmpty || ItemStack.isSameItemSameComponents(stackInside, stack))) {
+                        continue
+                    }
+                    val stack1 = blockCap.insertItem(i, stack, true)
+                    if (stack.count > stack1.count) {
+                        blockCap.insertItem(i, stack, false)
+                        insertionSucceeded = true
+                        break
+                    }
+                }
+                if (!insertionSucceeded) {
+                    return false
+                }
+            }
+
+            return true
+        } else {
+            return false
         }
-        return true
     }
+
+    private val outputItemsAvailable: List<Item>
+        get() = mutableListOf<Item>()
+            .also { result ->
+                for ((item, progress) in outputProgressPerDropItem) {
+                    if (progress >= 1.0) {
+                        result.add(item)
+                    }
+                }
+            }
 
     private fun increaseCraftingProgress() {
         if (progress < maxProgress) {
