@@ -7,6 +7,7 @@ import net.minecraft.world.level.block.SoundType
 import net.minecraft.world.level.block.state.BlockBehaviour
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument
 import net.minecraft.world.level.material.MapColor
+import net.minecraft.world.level.material.PushReaction
 import net.neoforged.bus.api.IEventBus
 import net.neoforged.neoforge.registries.DeferredBlock
 import net.neoforged.neoforge.registries.DeferredRegister
@@ -23,9 +24,10 @@ object ModBlocks {
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.STONE)
                 .instrument(NoteBlockInstrument.BASS)
-                .strength(2.0F, 3.0F)
+                .strength(0.5F)
                 .sound(SoundType.STONE)
                 .noOcclusion()
+                .pushReaction(PushReaction.DESTROY)
         )
     }
     val HOPPING_BONSAI_POT: DeferredBlock<Block> = registerBlockWithItem("hopping_bonsai_pot") {
