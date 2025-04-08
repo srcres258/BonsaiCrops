@@ -10,14 +10,13 @@ import top.srcres258.bonsaicrops.BonsaiCrops
 @EventBusSubscriber(modid = BonsaiCrops.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
 object DataGenerators {
     @SubscribeEvent
-    fun onGatherData(event: GatherDataEvent) {
+    fun onGatherClientData(event: GatherDataEvent.Client) {
         val generator = event.generator
         val packOutput = generator.packOutput
-        val existingFileHelper = event.existingFileHelper
         val lookupProvider = event.lookupProvider
 
         generator.addProvider(
-            event.includeServer(),
+            true,
             LootTableProvider(
                 packOutput,
                 setOf(),
@@ -25,24 +24,22 @@ object DataGenerators {
                 lookupProvider
             )
         )
-        generator.addProvider(event.includeServer(), ModRecipeProvider.Runner(packOutput, lookupProvider))
+        generator.addProvider(true, ModRecipeProvider.Runner(packOutput, lookupProvider))
 
-        val blockTagsProvider = ModBlockTagsProvider(packOutput, lookupProvider, existingFileHelper)
+        val blockTagsProvider = ModBlockTagsProvider(packOutput, lookupProvider)
         val itemTagsProvider = ModItemTagsProvider(
             packOutput,
             lookupProvider,
-            blockTagsProvider.contentsGetter(),
-            existingFileHelper
+            blockTagsProvider.contentsGetter()
         )
-        generator.addProvider(event.includeServer(), blockTagsProvider)
-        generator.addProvider(event.includeServer(), itemTagsProvider)
+        generator.addProvider(true, blockTagsProvider)
+        generator.addProvider(true, itemTagsProvider)
 
-        generator.addProvider(event.includeServer(), ModDataMapProvider(packOutput, lookupProvider))
+        generator.addProvider(true, ModDataMapProvider(packOutput, lookupProvider))
 
-        generator.addProvider(event.includeClient(), ModItemModelProvider(packOutput, existingFileHelper))
-        generator.addProvider(event.includeClient(), ModBlockStateProvider(packOutput, existingFileHelper))
+        generator.addProvider(true, ModModelProvider(packOutput))
 
-        generator.addProvider(event.includeServer(), ModDatapackProvider(packOutput, lookupProvider))
-        generator.addProvider(event.includeServer(), ModGlobalLootModifierProvider(packOutput, lookupProvider))
+        generator.addProvider(true, ModDatapackProvider(packOutput, lookupProvider))
+        generator.addProvider(true, ModGlobalLootModifierProvider(packOutput, lookupProvider))
     }
 }
