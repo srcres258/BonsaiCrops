@@ -42,6 +42,7 @@ class BonsaiPotBlockEntity(
     override var progress = 0
     override var maxProgress = 200
     private var outputProgressPerDropItem = mutableMapOf<Item, Double>()
+    var isStuck: Boolean = false
 
     fun drops() {
         val level = level
@@ -67,6 +68,7 @@ class BonsaiPotBlockEntity(
             outputProgressTag.putDouble(tagKey, progress)
         }
         tag.put("output_progress", outputProgressTag)
+        tag.putBoolean("is_stuck", isStuck)
     }
 
     override fun loadAdditional(tag: CompoundTag, registries: HolderLookup.Provider) {
@@ -85,6 +87,7 @@ class BonsaiPotBlockEntity(
                 outputProgressPerDropItem[item] = progress
             }
         }
+        isStuck = tag.getBoolean("is_stuck")
 
         super.loadAdditional(tag, registries)
     }
@@ -132,12 +135,15 @@ class BonsaiPotBlockEntity(
             if (outputs.isEmpty()) {
                 return false
             }
-            for (output in outputs) {
-                val progressIncrement = output.count.toDouble() / 10.0
-                if (output.item in outputProgressPerDropItem.keys) {
-                    outputProgressPerDropItem[output.item] = outputProgressPerDropItem[output.item]!! + progressIncrement
-                } else {
-                    outputProgressPerDropItem[output.item] = progressIncrement
+            if (!isStuck) {
+                // If not stuck, increase the progress of output items.
+                for (output in outputs) {
+                    val progressIncrement = output.count.toDouble() / 10.0
+                    if (output.item in outputProgressPerDropItem.keys) {
+                        outputProgressPerDropItem[output.item] = outputProgressPerDropItem[output.item]!! + progressIncrement
+                    } else {
+                        outputProgressPerDropItem[output.item] = progressIncrement
+                    }
                 }
             }
 
@@ -174,10 +180,14 @@ class BonsaiPotBlockEntity(
                     }
                 }
                 if (!insertionSucceeded) {
+                    // Could not output, mark as stuck.
+                    isStuck = true
                     return false
                 }
             }
 
+            // Successfully outputted, mark as not stuck.
+            isStuck = false
             return true
         } else {
             return false
