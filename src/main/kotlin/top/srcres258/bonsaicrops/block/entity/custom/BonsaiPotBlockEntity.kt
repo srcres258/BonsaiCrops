@@ -81,8 +81,10 @@ class BonsaiPotBlockEntity(
                 val path = parts[1]
                 val id = ResourceLocation.fromNamespaceAndPath(namespace, path)
                 val item = BuiltInRegistries.ITEM.get(id)
-                val progress = tag.getDouble(tagKey)
-                outputProgressPerDropItem[item] = progress
+                if (item.isPresent) {
+                    val progress = tag.getDouble(tagKey)
+                    outputProgressPerDropItem[item.get().value()] = progress
+                }
             }
         }
 

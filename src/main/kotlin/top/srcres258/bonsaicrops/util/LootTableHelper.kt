@@ -22,7 +22,7 @@ fun generateDropsForBlock(
 ): List<ItemStack> {
     val lootTableKey = block.lootTable
 
-    return if (lootTableKey == BuiltInLootTables.EMPTY) {
+    return if (lootTableKey.isEmpty) {
         listOf()
     } else {
         val params = LootParams.Builder(level)
@@ -35,7 +35,7 @@ fun generateDropsForBlock(
                 }
             }
             .create(LootContextParamSets.BLOCK)
-        val lootTable = level.server.reloadableRegistries().getLootTable(lootTableKey)
+        val lootTable = level.server.reloadableRegistries().getLootTable(lootTableKey.get())
         lootTable.getRandomItems(params)
     }
 }

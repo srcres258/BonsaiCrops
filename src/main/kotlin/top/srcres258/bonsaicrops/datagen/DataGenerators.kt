@@ -25,7 +25,7 @@ object DataGenerators {
                 lookupProvider
             )
         )
-        generator.addProvider(event.includeServer(), ModRecipeProvider(packOutput, lookupProvider))
+        generator.addProvider(event.includeServer(), ModRecipeProvider.Runner(packOutput, lookupProvider))
 
         val blockTagsProvider = ModBlockTagsProvider(packOutput, lookupProvider, existingFileHelper)
         val itemTagsProvider = ModItemTagsProvider(

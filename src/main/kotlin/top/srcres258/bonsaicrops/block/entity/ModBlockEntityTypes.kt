@@ -15,17 +15,17 @@ object ModBlockEntityTypes {
 
     val BONSAI_POT_BLOCK_ENTITY: DeferredHolder<BlockEntityType<*>, BlockEntityType<BonsaiPotBlockEntity>> =
         BLOCK_ENTITY_TYPES.register("bonsai_pot_block_entity") { ->
-            BlockEntityType.Builder.of(
+            BlockEntityType(
                 { pos, state -> BonsaiPotBlockEntity(false, pos, state) },
                 ModBlocks.BONSAI_POT.get()
-            ).build(null)
+            )
         }
     val HOPPING_BONSAI_POT_BLOCK_ENTITY: DeferredHolder<BlockEntityType<*>, BlockEntityType<BonsaiPotBlockEntity>> =
         BLOCK_ENTITY_TYPES.register("hopping_bonsai_pot_block_entity") { ->
-            BlockEntityType.Builder.of(
+            BlockEntityType(
                 { pos, state -> BonsaiPotBlockEntity(true, pos, state) },
                 ModBlocks.HOPPING_BONSAI_POT.get()
-            ).build(null)
+            )
         }
 
     fun register(eventBus: IEventBus) {

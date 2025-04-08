@@ -6,7 +6,7 @@ import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.world.Containers
 import net.minecraft.world.InteractionHand
-import net.minecraft.world.ItemInteractionResult
+import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.BlockItem
@@ -97,7 +97,7 @@ class BonsaiPotBlock(
         player: Player,
         hand: InteractionHand,
         hitResult: BlockHitResult
-    ): ItemInteractionResult {
+    ): InteractionResult {
         val blockEntity = level.getBlockEntity(pos)
         if (blockEntity is BonsaiPotBlockEntity) {
             val item = stack.item
@@ -132,10 +132,10 @@ class BonsaiPotBlock(
                 }
             }
 
-            return ItemInteractionResult.SUCCESS
+            return InteractionResult.SUCCESS
         }
 
-        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION
+        return InteractionResult.TRY_WITH_EMPTY_HAND
     }
 
     override fun <T : BlockEntity?> getTicker(
